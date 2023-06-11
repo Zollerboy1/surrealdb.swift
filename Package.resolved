@@ -1,0 +1,68 @@
+{
+  "pins" : [
+    {
+      "identity" : "bigdecimal",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Zollerboy1/BigDecimal.git",
+      "state" : {
+        "revision" : "04d17040e4615fbfda3a882b9881f6841f4bf557",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt.git",
+      "state" : {
+        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "lettercase",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rwbutler/LetterCase.git",
+      "state" : {
+        "revision" : "03589da8c6554655b276ba187cfc1cd35ad711d2",
+        "version" : "1.6.1"
+      }
+    },
+    {
+      "identity" : "swift-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-algorithms",
+      "state" : {
+        "branch" : "main",
+        "revision" : "288d8b00f2d7d746dce8997124f4a7d902100af7"
+      }
+    },
+    {
+      "identity" : "swift-numerics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-numerics",
+      "state" : {
+        "revision" : "0a5bc04095a675662cf24757cc0640aa2204253b",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-syntax",
+      "state" : {
+        "branch" : "swift-5.9-DEVELOPMENT-SNAPSHOT-2023-06-05-a",
+        "revision" : "165fc6d22394c1168ff76ab5d951245971ef07e5"
+      }
+    },
+    {
+      "identity" : "ulid.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/yaslab/ULID.swift.git",
+      "state" : {
+        "revision" : "309acd503a35fc95650bf45d23cca2a3e24bad19",
+        "version" : "1.2.0"
+      }
+    }
+  ],
+  "version" : 2
+}
