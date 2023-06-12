@@ -1,5 +1,5 @@
 //
-// SurrealDBTests.swift
+// MacroTests.swift
 // SurrealDB
 //
 // Created by Josef Zoller on 10.06.23.
@@ -8,10 +8,9 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
-@testable import SurrealDB
 @testable import SurrealDBMacroImpl
 
-final class SurrealDBTests: XCTestCase {
+final class MacroTests: XCTestCase {
     private static let testMacros: [String: Macro.Type] = [
         "Model": ModelMacro.self,
         "MutableField": MutableFieldMacro.self,

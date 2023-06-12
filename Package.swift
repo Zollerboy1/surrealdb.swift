@@ -7,7 +7,7 @@ import CompilerPluginSupport
 let package = Package(
     name: "SurrealDB",
     platforms: [
-        .macOS(.v10_15)
+        .macOS(.v13)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -18,10 +18,13 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-algorithms.git", branch: "main"),
-        .package(url: "https://github.com/apple/swift-syntax.git", revision: "swift-5.9-DEVELOPMENT-SNAPSHOT-2023-06-05-a"),
+        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.1.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", revision: "swift-DEVELOPMENT-SNAPSHOT-2023-06-07-a"),
         .package(url: "https://github.com/rwbutler/LetterCase.git", from: "1.6.1"),
+        .package(url: "https://github.com/tesseract-one/WebSocket.swift.git", from: "0.2.0"),
         .package(url: "https://github.com/yaslab/ULID.swift.git", from: "1.2.0"),
-        .package(url: "https://github.com/Zollerboy1/BigDecimal.git", from: "1.0.0")
+        .package(url: "https://github.com/Zollerboy1/BigDecimal.git", from: "1.0.0"),
+        .package(url: "https://github.com/Zollerboy1/SwiftCommand.git", from: "1.3.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -30,6 +33,8 @@ let package = Package(
             name: "SurrealDBCore",
             dependencies: [
                 "BigDecimal",
+                .product(name: "Atomics", package: "swift-atomics"),
+                .product(name: "WebSocket", package: "WebSocket.swift"),
                 .product(name: "ULID", package: "ULID.swift")
             ]
         ),
@@ -60,6 +65,7 @@ let package = Package(
             dependencies: [
                 "SurrealDB",
                 "SurrealDBMacroImpl",
+                "SwiftCommand",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax")
             ]

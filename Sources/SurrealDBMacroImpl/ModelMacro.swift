@@ -655,7 +655,7 @@ extension ModelMacro: MemberMacro {
                     \(raw: blueprintInitArguments)
                 )
                 """
-            ).with(\.trailingTrivia, .newline)
+            ).with(\.trailingTrivia, [.newlines(1), .spaces(4)])
 
             if withID {
                 ExprSyntax(
