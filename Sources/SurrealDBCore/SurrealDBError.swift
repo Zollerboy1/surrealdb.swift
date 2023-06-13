@@ -11,7 +11,10 @@ public enum SurrealDBError: Error, CustomStringConvertible {
     case socketIsAlreadyConnected
     case socketDisconnected(errorCode: WebSocketErrorCode)
     case socketIsNotConnected
-    case invalidResponse(string: String)
+    case socketInvalidResponse(string: String)
+    case socketInvalidResult(string: Substring)
+    case rpcError(code: Int, message: Substring)
+    case modelDatabaseNotProvided
 
     public var description: String {
         switch self {
@@ -23,8 +26,14 @@ public enum SurrealDBError: Error, CustomStringConvertible {
             "Socket disconnected with error code \(errorCode)"
         case .socketIsNotConnected:
             "Tried to send request while socket was not connected"
-        case let .invalidResponse(string):
+        case let .socketInvalidResponse(string):
             "Socket recieved invalid response: \(string)"
+        case let .socketInvalidResult(string):
+            "Socket response contained invalid result: \(string)"
+        case let .rpcError(code, message):
+            "RPC error with code \(code) and message: \(message)"
+        case .modelDatabaseNotProvided:
+            "Must provide database in user data for decoding model"
         }
     }
 }

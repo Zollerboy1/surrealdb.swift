@@ -1,25 +1,29 @@
 //
-// SurrealDBModel.swift
+// ModelProtocol.swift
 // SurrealDB
 //
 // Created by Josef Zoller on 11.06.23.
 
-public protocol SurrealDBModel: AnyObject, Decodable {
+public protocol ModelProtocol: AnyObject, Decodable {
     associatedtype Index: SurrealDBIndex
-    associatedtype CreateBlueprint: SurrealDBBlueprint
-    associatedtype UpdateBlueprint: SurrealDBBlueprint
+    associatedtype CreateBlueprint: Blueprint
+    associatedtype UpdateBlueprint: Blueprint
 
     static var table: String { get }
-    static var schema: SurrealDBSchema { get }
+    static var schema: Schema { get }
 
     static func create(
-        fromBlueprint blueprint: CreateBlueprint
+        fromBlueprint blueprint: CreateBlueprint,
+        on database: SurrealDB
     ) async throws -> Self
     static func create(
         withID id: Index,
-        fromBlueprint blueprint: CreateBlueprint
+        fromBlueprint blueprint: CreateBlueprint,
+        on database: SurrealDB
     ) async throws -> Self
 
+
+    var database: SurrealDB { get }
 
     var id: Index { get }
 
@@ -30,16 +34,23 @@ public protocol SurrealDBModel: AnyObject, Decodable {
     func resetUpdateBlueprint()
 }
 
-extension SurrealDBModel {
+extension ModelProtocol {
+    public static var databaseUserInfoKey: CodingUserInfoKey {
+        .init(rawValue: "sceneSetup")!
+    }
+
+
     public static func create(
-        fromBlueprint blueprint: CreateBlueprint
+        fromBlueprint blueprint: CreateBlueprint,
+        on database: SurrealDB
     ) async throws -> Self {
         fatalError("Not implemented")
     }
 
     public static func create(
         withID id: Index,
-        fromBlueprint blueprint: CreateBlueprint
+        fromBlueprint blueprint: CreateBlueprint,
+        on database: SurrealDB
     ) async throws -> Self {
         fatalError("Not implemented")
     }
@@ -50,3 +61,5 @@ extension SurrealDBModel {
         fatalError("Not implemented")
     }
 }
+
+

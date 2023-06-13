@@ -7,7 +7,7 @@
 import struct Foundation.UUID
 import ULID
 
-/// A type that can be used as an index for a `SurrealDBModel`.
+/// A type that can be used as an index for a `ModelProtocol`.
 ///
 /// `Int`, `String`, `UUID`, and `ULID` conform to this protocol.
 /// Do not conform other types to this protocol.

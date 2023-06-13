@@ -32,7 +32,7 @@ struct ModelMacro {
             binding: PatternBindingSyntax,
             bindingKeyword: TokenSyntax
         ) {
-            self.identifier = identifier
+            self.identifier = identifier.trimmed
             self.name = identifier.text
             self.dbName = self.name.convert(from: .lowerCamel, to: .snake)
             self.type = type
@@ -418,7 +418,7 @@ extension ModelMacro: ConformanceMacro {
             return []
         }
 
-        return [("SurrealDBModel", nil)]
+        return [("ModelProtocol", nil)]
     }
 }
 
@@ -438,6 +438,7 @@ extension ModelMacro: MemberMacro {
     private var newMembers: [DeclSyntax] {
         get throws {
             var members: [DeclSyntax] = [
+                "public let database: SurrealDB",
                 "public typealias Index = \(self.indexType.typeSyntax)",
                 try self.buildCodingKeysEnum(),
                 try self.buildCreateBlueprintStruct(),
@@ -457,14 +458,14 @@ extension ModelMacro: MemberMacro {
             if self.tableVariableInfo == nil {
                 members.insert(
                     "public static let table = \(literal: self.tableName)",
-                    at: 0
+                    at: 1
                 )
             }
 
             if self.idVariableInfo == nil {
                 members.insert(
                     "public let id: \(self.indexType.typeSyntax)",
-                    at: 0
+                    at: 1
                 )
             }
 
@@ -489,7 +490,7 @@ extension ModelMacro: MemberMacro {
 
     private func buildCreateBlueprintStruct() throws -> DeclSyntax {
         try .init(StructDeclSyntax.init(
-            "public struct CreateBlueprint: SurrealDBBlueprint"
+            "public struct CreateBlueprint: Blueprint"
         ) {
             for (name, type) in self.memberVariables {
                 DeclSyntax("private let \(name): \(type)")
@@ -527,7 +528,7 @@ extension ModelMacro: MemberMacro {
 
     private func buildUpdateBlueprintStruct() throws -> DeclSyntax {
         try .init(StructDeclSyntax.init(
-            "public struct UpdateBlueprint: SurrealDBBlueprint"
+            "public struct UpdateBlueprint: Blueprint"
         ) {
             DeclSyntax("fileprivate let $hasChanges: Bool")
 
@@ -601,7 +602,8 @@ extension ModelMacro: MemberMacro {
         }.joined(separator: ",\n        ")
 
         return """
-            public static let schema = SurrealDBSchema(
+            public static let schema = Schema(
+                idType: .\(raw: self.indexType.rawValue),
                 fields: [
                     \(raw: fields)
                 ]
@@ -636,6 +638,10 @@ extension ModelMacro: MemberMacro {
                     FunctionParameterSyntax("\(name): \(type)")
                 }
             }
+
+            FunctionParameterSyntax(
+                "on database: SurrealDB"
+            )
         }
 
         return try .init(FunctionDeclSyntax(
@@ -662,13 +668,19 @@ extension ModelMacro: MemberMacro {
                     """
                     return try await Self.create(
                         withID: id,
-                        fromBlueprint: blueprint
+                        fromBlueprint: blueprint,
+                        on: database
                     )
                     """
                 )
             } else {
                 ExprSyntax(
-                    "return try await Self.create(fromBlueprint: blueprint)"
+                    """
+                    return try await Self.create(
+                        fromBlueprint: blueprint,
+                        on: database
+                    )
+                    """
                 )
             }
         })
@@ -680,9 +692,23 @@ extension ModelMacro: MemberMacro {
         ) {
             ExprSyntax(
                 """
+                guard
+                    let database =
+                        decoder.userInfo[Self.databaseUserInfoKey] as? SurrealDB
+                else {
+                    throw SurrealDBError.modelDatabaseNotProvided
+                }
+                """
+            ).with(\.trailingTrivia, [.newlines(1), .spaces(4)])
+
+            ExprSyntax(
+                """
                 let container = try decoder.container(keyedBy: CodingKeys.self)
                 """
             ).with(\.trailingTrivia, .newlines(2))
+
+            ExprSyntax("self.database = database")
+                .with(\.trailingTrivia, .newlines(2))
 
             ExprSyntax(
                 """

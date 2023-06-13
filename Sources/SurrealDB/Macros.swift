@@ -6,17 +6,19 @@
 
 @attached(conformance)
 @attached(member, names:
+    named(database),
+    named(id),
+    named(table),
     named(Index),
     named(CodingKeys),
     named(CreateBlueprint),
     named(UpdateBlueprint),
     named(schema),
     named(create),
+    named(create),
     named($updateBlueprint),
     named(resetUpdateBlueprint),
-    named(init(from:)),
-    named(table),
-    named(id)
+    named(init(from:))
 )
 @attached(memberAttribute)
 public macro Model() = #externalMacro(

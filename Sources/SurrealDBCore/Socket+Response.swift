@@ -1,12 +1,12 @@
 //
-// SurrealDBSocketResponse.swift
+// Socket+Response.swift
 // SurrealDB
 //
 // Created by Josef Zoller on 12.06.23.
 
 import RegexBuilder
 
-extension SurrealDBSocket {
+extension Socket {
     internal struct Response: Sendable {
         enum Kind {
             case error(errorCode: Int, message: Substring)
@@ -23,7 +23,7 @@ extension SurrealDBSocket {
     }
 }
 
-extension SurrealDBSocket.Response {
+extension Socket.Response {
     private static let responseRegex = #/
         ^\s*
         \{\s*

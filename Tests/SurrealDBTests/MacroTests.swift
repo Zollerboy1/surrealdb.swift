@@ -40,6 +40,8 @@ final class MacroTests: XCTestCase {
                     }
                 }
 
+                public let database: SurrealDB
+
                 public let id: ULID
 
                 public typealias Index = ULID
@@ -50,7 +52,7 @@ final class MacroTests: XCTestCase {
                     case age = "age"
                 }
 
-                public struct CreateBlueprint: SurrealDBBlueprint {
+                public struct CreateBlueprint: Blueprint {
                     private let name: String
                     private let age: Int
 
@@ -67,7 +69,7 @@ final class MacroTests: XCTestCase {
                     }
                 }
 
-                public struct UpdateBlueprint: SurrealDBBlueprint {
+                public struct UpdateBlueprint: Blueprint {
                     fileprivate let $hasChanges: Bool
                     fileprivate let name: String?
                     fileprivate let age: Int?
@@ -106,7 +108,8 @@ final class MacroTests: XCTestCase {
                     }
                 }
 
-                public static let schema = SurrealDBSchema(
+                public static let schema = Schema(
+                    idType: .ulid,
                     fields: [
                         "name": .string,
                         "age": .int
@@ -114,17 +117,20 @@ final class MacroTests: XCTestCase {
                 )
 
                 public static func create(
-                    name: String, age: Int
+                    name: String, age: Int, on database: SurrealDB
                 ) async throws -> User  {
                     let blueprint = CreateBlueprint(
                         name: name, age: age
                     )
 
-                    return try await Self.create(fromBlueprint: blueprint)
+                    return try await Self.create(
+                        fromBlueprint: blueprint,
+                        on: database
+                    )
                 }
 
                 public static func create(
-                    withID id: ULID, name: String, age: Int
+                    withID id: ULID, name: String, age: Int, on database: SurrealDB
                 ) async throws -> User  {
                     let blueprint = CreateBlueprint(
                         name: name, age: age
@@ -132,7 +138,8 @@ final class MacroTests: XCTestCase {
 
                     return try await Self.create(
                         withID: id,
-                        fromBlueprint: blueprint
+                        fromBlueprint: blueprint,
+                        on: database
                     )
                 }
 
@@ -143,7 +150,16 @@ final class MacroTests: XCTestCase {
                 }
 
                 public init(from decoder: Decoder) throws {
+                    guard
+                        let database =
+                            decoder.userInfo[Self.databaseUserInfoKey] as? SurrealDB
+                    else {
+                        throw SurrealDBError.modelDatabaseNotProvided
+                    }
+
                     let container = try decoder.container(keyedBy: CodingKeys.self)
+
+                    self.database = database
 
                     self.id = try container.decode(ULID.self, forKey: .id)
 

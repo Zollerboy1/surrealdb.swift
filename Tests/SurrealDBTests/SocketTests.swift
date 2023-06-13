@@ -61,7 +61,7 @@ final class SocketTests: XCTestCase {
     }
 
     func testVersion() async throws {
-        let socket = SurrealDBSocket(
+        let socket = Socket(
             url: URL(string: "ws://localhost:8081/rpc")!
         )
 
@@ -70,15 +70,10 @@ final class SocketTests: XCTestCase {
         let isConnected = await socket.isConnected
         XCTAssertTrue(isConnected)
 
-        let response = try await socket.sendRequest(withMethod: "version")
-
-        guard case let .result(result) = response.kind else {
-            XCTFail("Expected result response")
-            return
-        }
+        let versionString = try await socket.sendRequest(withMethod: .version)
 
         XCTAssertEqual(
-            result.trimmingPrefix("\"surrealdb-").dropLast(),
+            versionString.trimmingPrefix("surrealdb-"),
             Self.surrealVersion
         )
 
@@ -86,7 +81,7 @@ final class SocketTests: XCTestCase {
     }
 
     func testPing() async throws {
-        let socket = SurrealDBSocket(
+        let socket = Socket(
             url: URL(string: "ws://localhost:8081/rpc")!
         )
 
@@ -95,22 +90,13 @@ final class SocketTests: XCTestCase {
         let isConnected = await socket.isConnected
         XCTAssertTrue(isConnected)
 
-        let response = try await socket.sendRequest(withMethod: "ping")
-
-        guard case let .result(result) = response.kind else {
-            XCTFail("Expected result response")
-            return
-        }
-
-        XCTAssertEqual(result, "null")
+        try await socket.sendRequest(withMethod: .ping)
 
         socket.disconnect()
     }
 
     func testRequestInterleaving() async throws {
-        struct NoResultResponse: Error {}
-
-        let socket = SurrealDBSocket(
+        let socket = Socket(
             url: URL(string: "ws://localhost:8081/rpc")!
         )
 
@@ -120,39 +106,28 @@ final class SocketTests: XCTestCase {
         XCTAssertTrue(isConnected)
 
         try await withThrowingTaskGroup(
-            of: (isVersion: Bool, result: Substring).self
+            of: String?.self
         ) { group in
             for i in 0..<100 {
                 group.addTask {
-                    let response = try await socket.sendRequest(
-                        withMethod: i % 2 == 0 ? "version" : "ping"
-                    )
-
-                    guard case let .result(result) = response.kind else {
-                        throw NoResultResponse()
+                    if i % 2 == 0 {
+                        return try await socket.sendRequest(
+                            withMethod: .version
+                        )
+                    } else {
+                        try await socket.sendRequest(withMethod: .ping)
+                        return nil
                     }
-
-                    return (i % 2 == 0, result)
                 }
             }
 
-            do {
-                for try await (isVersion, result) in group {
-                    if isVersion {
-                        XCTAssertEqual(
-                            result.trimmingPrefix("\"surrealdb-").dropLast(),
-                            Self.surrealVersion
-                        )
-                    } else {
-                        XCTAssertEqual(result, "null")
-                    }
+            for try await versionString in group {
+                if let versionString {
+                    XCTAssertEqual(
+                        versionString.trimmingPrefix("surrealdb-"),
+                        Self.surrealVersion
+                    )
                 }
-            } catch is NoResultResponse {
-                group.cancelAll()
-                XCTFail("Expected result response")
-            } catch {
-                group.cancelAll()
-                throw error
             }
         }
 

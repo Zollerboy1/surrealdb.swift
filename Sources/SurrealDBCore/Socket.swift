@@ -1,27 +1,28 @@
 //
-// SurrealDBSocket.swift
+// Socket.swift
 // SurrealDB
 //
 // Created by Josef Zoller on 12.06.23.
 
 import Atomics
+import class Foundation.JSONDecoder
 import struct Foundation.URL
 import RegexBuilder
 import WebSocket
 
-internal final class SurrealDBSocket: @unchecked Sendable {
+internal final class Socket: @unchecked Sendable {
     private struct Request {
         let id: UInt64
         let method: String
-        let parameters: String?
+        let encodedParameters: String?
 
         var json: String {
-            if let parameters = self.parameters {
+            if let encodedParameters = self.encodedParameters {
                 """
                 {
                     "id": \(self.id),
                     "method": "\(self.method)",
-                    "params": \(parameters)
+                    "params": \(encodedParameters)
                 }
                 """
             } else {
@@ -167,6 +168,8 @@ internal final class SurrealDBSocket: @unchecked Sendable {
         }
     }
 
+    private static let decoder = JSONDecoder()
+
     private let url: URL
     private let socket: WebSocket
     private let nextRequestID: UnsafeAtomic<UInt64>
@@ -208,21 +211,80 @@ internal final class SurrealDBSocket: @unchecked Sendable {
     }
 
 
-    internal func sendRequest(
-        withMethod method: String,
-        parameters: String? = nil
-    ) async throws -> Response {
+    internal func sendRequest<Method: RPCMethod>(
+        withMethod method: Method
+    ) async throws -> Method.Result {
         let requestID = self.nextRequestID.loadThenWrappingIncrement(
             ordering: .acquiringAndReleasing
         )
 
         let request = Request(
             id: requestID,
-            method: method,
-            parameters: parameters
+            method: Method.name,
+            encodedParameters: try method.encodedParameters
         )
 
-        return try await self.send(request: request)
+        let response = try await self.send(request: request)
+
+        guard response.requestID == requestID else {
+            fatalError(
+                """
+                Request and response IDs do not match: \
+                \(requestID) != \(response.requestID)
+                """
+            )
+        }
+
+        switch response.kind {
+        case let .error(errorCode, errorMessage):
+            throw SurrealDBError.rpcError(
+                code: errorCode,
+                message: errorMessage
+            )
+        case let .result(resultString):
+            guard let data = resultString.data(using: .utf8) else {
+                throw SurrealDBError.socketInvalidResult(string: resultString)
+            }
+
+            return try Self.decoder.decode(Method.Result.self, from: data)
+        }
+    }
+
+    internal func sendRequest<Method: RPCMethod>(
+        withMethod method: Method
+    ) async throws where Method.Result == Null {
+        let requestID = self.nextRequestID.loadThenWrappingIncrement(
+            ordering: .acquiringAndReleasing
+        )
+
+        let request = Request(
+            id: requestID,
+            method: Method.name,
+            encodedParameters: try method.encodedParameters
+        )
+
+        let response = try await self.send(request: request)
+
+        guard response.requestID == requestID else {
+            fatalError(
+                """
+                Request and response IDs do not match: \
+                \(requestID) != \(response.requestID)
+                """
+            )
+        }
+
+        switch response.kind {
+        case let .error(errorCode, errorMessage):
+            throw SurrealDBError.rpcError(
+                code: errorCode,
+                message: errorMessage
+            )
+        case let .result(resultString):
+            guard resultString == "null" else {
+                throw SurrealDBError.socketInvalidResult(string: resultString)
+            }
+        }
     }
 
 
@@ -276,7 +338,7 @@ internal final class SurrealDBSocket: @unchecked Sendable {
                 await self.stateStore.recieveResponse(response)
             } else {
                 await self.stateStore.error(
-                    SurrealDBError.invalidResponse(string: string)
+                    SurrealDBError.socketInvalidResponse(string: string)
                 )
             }
         }
